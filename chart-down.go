@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"io"
@@ -8,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v2"
 )
@@ -26,12 +28,29 @@ func main() {
 		url = url + "/index.yaml"
 	}
 
-	// make HTTP request
-	resp, err := http.Get(url)
+	client := &http.Client{
+		Timeout: 60 * time.Second,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
+		return
+
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		return
+
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode == http.StatusOK {
 		// create output file
 		f, err := os.Create("charts.txt")
@@ -55,21 +74,53 @@ func main() {
 			}
 
 			// extract data from YAML document
-			entries := doc["entries"].(map[interface{}]interface{})
+			entries, ok := doc["entries"].(map[interface{}]interface{})
+			if !ok {
+				fmt.Println("Error: 'entries' key not found in YAML document")
+				return
+			}
 			for _, entry := range entries {
-				charts := entry.([]interface{})
+				charts, ok := entry.([]interface{})
+				if !ok {
+					fmt.Println("Error: 'charts' key not found in YAML document")
+					continue
+				}
 				for _, chart := range charts {
-					chartData := chart.(map[interface{}]interface{})
-					name := chartData["name"].(string)
-					description := chartData["description"].(string)
-					urls := chartData["urls"].([]interface{})
-					version := chartData["version"].(string)
+					chartData, ok := chart.(map[interface{}]interface{})
+					if !ok {
+						continue
+					}
+					name, ok := chartData["name"].(string)
+					if !ok {
+						continue
+					}
+					description, ok := chartData["description"].(string)
+					if !ok {
+						continue
+					}
+					urls, ok := chartData["urls"].([]interface{})
+					if !ok {
+						continue
+					}
+					version, ok := chartData["version"].(string)
+					if !ok {
+						continue
+					}
+					type2, ok := chartData["type"].(string)
+					if !ok {
+						continue
+					}
 
 					// print out data
 					fmt.Printf("Name: %s\n", name)
 					fmt.Printf("Description: %s\n", description)
+					fmt.Printf("Type: %s\n", type2)
 					for _, u := range urls {
-						url := u.(string)
+						url, ok := u.(string)
+						if !ok {
+							fmt.Println("Error: invalid URL found in YAML document")
+							continue
+						}
 						if !strings.HasPrefix(url, "http") {
 							url = "" + urlz + "/" + url + ""
 						}
