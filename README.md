@@ -32,7 +32,7 @@ Example
 ---
 
 ```
-chart-down -url https://xxx.xxx.xxx.xxx | head
+chart-down -url https://xxx.xxx.xxx.xxx
 Name: tvp-web-server-swagger
 Description: A Helm chart for Kubernetes
 Type: application
