@@ -1,4 +1,4 @@
-module chart-down
+module github.com/RandomRobbieBF/chart-down
 
 go 1.19
 

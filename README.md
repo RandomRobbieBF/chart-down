@@ -9,9 +9,17 @@ Given a Helm repository URL, chart-down fetches the repo index, downloads every 
 - Go 1.19+
 - [TruffleHog](https://github.com/trufflesecurity/trufflehog) on PATH (`brew install trufflehog`)
 
-## Build
+## Install
 
 ```bash
+go install github.com/RandomRobbieBF/chart-down@latest
+```
+
+Or build from source:
+
+```bash
+git clone https://github.com/RandomRobbieBF/chart-down.git
+cd chart-down
 go build -o chart-down .
 ```
 
@@ -45,9 +53,14 @@ go build -o chart-down .
 | `charts.txt` | List of all chart download URLs |
 | `charts-extracted/` | Extracted chart contents |
 | `trufflehog-results/` | JSON findings per chart (only charts with secrets) |
+| `trufflehog-results/verified-secrets.json` | Consolidated verified (confirmed active) secrets |
 
 Review findings:
 
 ```bash
+# Verified secrets only
+cat trufflehog-results/verified-secrets.json 2>/dev/null | jq .
+
+# All findings
 cat trufflehog-results/*.json | jq .
 ```
